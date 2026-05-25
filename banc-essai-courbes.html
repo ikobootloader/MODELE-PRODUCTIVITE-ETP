@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<!-- Banc d'essai comparatif de modeles de courbes d'apprentissage. Licence GPLv3 - https://mdph.over.blog/ -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banc d'essai — Courbes d'apprentissage &amp; ETP productif</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+  <style>
+    :root {
+      --ink:#1a1410; --ink-soft:#4a4138; --paper:#f4efe6; --paper-2:#ebe3d4;
+      --card:#fbf8f1; --line:#d8cdb8; --accent:#b4541e; --accent-2:#1f5c4a;
+      --gold:#c69b3a; --shadow:rgba(40,28,14,0.12);
+      --mono:'Spline Sans Mono',ui-monospace,monospace;
+      --sans:'Spline Sans',system-ui,sans-serif;
+      --serif:'Fraunces',Georgia,serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--sans);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+      background:radial-gradient(circle at 12% 8%,rgba(180,84,30,.06),transparent 38%),
+                 radial-gradient(circle at 88% 92%,rgba(31,92,74,.06),transparent 42%),var(--paper);}
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.035;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+    header{padding:2.8rem 2rem 2rem;border-bottom:1.5px solid var(--line);position:relative}
+    header .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;color:var(--accent);margin-bottom:.7rem}
+    header h1{font-family:var(--serif);font-weight:900;font-size:clamp(1.9rem,4.5vw,3.1rem);line-height:1.03;letter-spacing:-.02em;max-width:24ch}
+    header h1 em{font-style:italic;color:var(--accent)}
+    header .lede{margin-top:.9rem;max-width:66ch;color:var(--ink-soft);font-size:1rem}
+    .info-button{position:absolute;top:2rem;right:2rem;font-family:var(--mono);font-size:.78rem;background:var(--ink);color:var(--paper);border:none;padding:.55rem .95rem;border-radius:2px;cursor:pointer;transition:.2s}
+    .info-button:hover{background:var(--accent);transform:translateY(-1px)}
+    main{max-width:1240px;margin:0 auto;padding:2rem 1.6rem 4rem}
+    .grid{display:grid;grid-template-columns:400px 1fr;gap:2rem;align-items:start}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .panel{background:var(--card);border:1.5px solid var(--line);border-radius:4px;padding:1.4rem;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 6px 20px -12px var(--shadow)}
+    .panel+.panel{margin-top:1.3rem}
+    h2.st{font-family:var(--mono);font-size:.74rem;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-2);margin-bottom:1rem;padding-bottom:.55rem;border-bottom:1px dashed var(--line);display:flex;align-items:baseline;gap:.55rem}
+    h2.st .num{font-family:var(--serif);font-weight:900;font-size:1.1rem;color:var(--accent)}
+    .field{margin-bottom:.85rem}
+    .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:.8rem;font-weight:600;margin-bottom:.3rem;color:var(--ink-soft)}
+    .field label .val{font-family:var(--mono);color:var(--accent);font-size:.78rem}
+    .field input[type=text],.field input[type=number],.field select,.field textarea{width:100%;padding:.5rem .6rem;font-family:var(--mono);font-size:.84rem;border:1.5px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink)}
+    .field textarea{resize:vertical;min-height:90px;line-height:1.5}
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+    .field input[type=range]{width:100%;accent-color:var(--accent)}
+    .hint{font-size:.72rem;color:var(--ink-soft);margin-top:.25rem;font-style:italic}
+    .btn{font-family:var(--mono);font-size:.82rem;background:var(--accent);color:#fff;border:none;padding:.6rem 1rem;border-radius:3px;cursor:pointer;transition:.2s;width:100%}
+    .btn:hover{background:#9a4416;transform:translateY(-1px)}
+    .btn.sec{background:var(--ink)} .btn.sec:hover{background:var(--accent-2)}
+    .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)} .btn.ghost:hover{border-color:var(--accent);color:var(--accent);background:transparent}
+    .row{display:flex;gap:.6rem} .row .btn{width:auto;flex:1}
+    .chk{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-family:var(--mono);padding:.3rem 0;cursor:pointer}
+    .chk input{accent-color:var(--accent);width:16px;height:16px}
+    .chart-wrap{background:var(--card);border:1.5px solid var(--line);border-radius:4px;padding:1.3rem;margin-bottom:1.3rem}
+    .chart-wrap h3{font-family:var(--serif);font-weight:600;font-size:1.25rem;margin-bottom:.2rem}
+    .chart-wrap .sub{font-size:.8rem;color:var(--ink-soft);margin-bottom:1rem}
+    .canvas-box{position:relative;height:360px}
+    canvas{max-height:360px}
+    table{width:100%;border-collapse:collapse;font-size:.82rem;font-family:var(--mono)}
+    th,td{text-align:right;padding:.5rem .55rem;border-bottom:1px solid var(--line)}
+    th:first-child,td:first-child{text-align:left}
+    thead th{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-2);border-bottom:2px solid var(--ink)}
+    tbody tr.best{background:rgba(198,155,58,.16)}
+    tbody tr.best td:first-child::after{content:" ★";color:var(--gold)}
+    .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+    .empty{font-style:italic;color:var(--ink-soft);font-size:.85rem;padding:.5rem 0}
+    .warn{background:rgba(180,84,30,.08);border:1px solid var(--accent);border-radius:3px;padding:.7rem .85rem;font-size:.8rem;color:var(--ink);margin-top:.8rem}
+    .warn b{color:var(--accent)}
+    /* Grille éditable */
+    .grid-data{border:1.5px solid var(--line);border-radius:3px;overflow:hidden;background:var(--paper)}
+    .grid-head{display:grid;grid-template-columns:1fr 1fr 36px;gap:0;font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-2);background:var(--paper-2);border-bottom:1.5px solid var(--line)}
+    .grid-head span{padding:.45rem .55rem}
+    #dataRows{max-height:300px;overflow-y:auto}
+    .data-row{display:grid;grid-template-columns:1fr 1fr 36px;gap:0;border-bottom:1px solid var(--line)}
+    .data-row:last-child{border-bottom:none}
+    .data-row input{border:none;background:transparent;font-family:var(--mono);font-size:.84rem;padding:.4rem .55rem;width:100%;color:var(--ink)}
+    .data-row input:focus{outline:none;background:rgba(180,84,30,.07)}
+    .data-row input.bad{background:rgba(162,59,92,.14);color:#a23b5c}
+    .data-row .del{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:1rem;line-height:1;transition:.15s}
+    .data-row .del:hover{color:var(--accent)}
+    .status-ok{font-size:.74rem;font-family:var(--mono);color:var(--accent-2)}
+    .status-warn{font-size:.74rem;font-family:var(--mono);color:#a23b5c}
+    footer{text-align:center;padding:2rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;color:var(--ink-soft);border-top:1.5px solid var(--line)}
+    .modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(26,20,16,.55);backdrop-filter:blur(3px);overflow-y:auto}
+    .modal.open{display:block}
+    .modal-content{background:var(--card);max-width:820px;margin:4vh auto;padding:2.4rem 2.6rem;border-radius:5px;border:1.5px solid var(--line);box-shadow:0 30px 60px -20px rgba(0,0,0,.4);position:relative}
+    .modal-content .close{position:absolute;top:1.2rem;right:1.4rem;font-size:1.8rem;line-height:1;cursor:pointer;color:var(--ink-soft);background:none;border:none}
+    .modal-content .close:hover{color:var(--accent)}
+    .modal-content h2{font-family:var(--serif);font-weight:900;font-size:1.7rem;margin-bottom:.4rem}
+    .modal-content h3{font-family:var(--mono);font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);margin:1.5rem 0 .6rem}
+    .modal-content p,.modal-content li{font-size:.92rem;color:var(--ink-soft);margin-bottom:.6rem}
+    .modal-content ul,.modal-content ol{padding-left:1.3rem}
+    .math-formula{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:.6rem .9rem;margin:.7rem 0;border-radius:3px;overflow-x:auto;font-size:.9rem}
+    .callout{background:rgba(198,155,58,.12);border:1px solid var(--gold);padding:.9rem 1.1rem;border-radius:3px;font-size:.86rem;color:var(--ink);margin:.8rem 0}
+    .callout b{color:var(--accent)}
+    .ref{font-size:.78rem;color:var(--ink-soft);border-left:2px solid var(--line);padding-left:.8rem;margin:.4rem 0}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Banc d'essai · Operations &amp; learning curves</div>
+    <h1>Courbes d'apprentissage &amp; <em>ETP productif</em> — comparaison de modèles</h1>
+    <p class="lede">Sept modèles validés dans la littérature, ajustés à des données réelles et départagés
+      par les critères d'information (AIC, BIC) plutôt que par un choix de forme imposé a priori.</p>
+    <button id="infoButton" class="info-button">ℹ Modèles &amp; sources</button>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- COLONNE GAUCHE -->
+      <div>
+        <div class="panel">
+          <h2 class="st"><span class="num">01</span> Données observées</h2>
+
+          <div class="grid-data">
+            <div class="grid-head"><span>Mois (x)</span><span>Productivité (y)</span><span></span></div>
+            <div id="dataRows"></div>
+          </div>
+
+          <div class="row" style="margin-top:.7rem">
+            <button class="btn ghost" id="addRow">＋ Ligne</button>
+            <button class="btn ghost" id="pasteBtn">⎘ Coller depuis Excel</button>
+          </div>
+          <div class="row" style="margin-top:.6rem">
+            <button class="btn sec" id="loadDemo">Données de démo</button>
+            <button class="btn ghost" id="clearData">Tout vider</button>
+          </div>
+
+          <div class="hint" style="margin-top:.6rem">
+            Saisie directe, ou collez deux colonnes depuis Excel via « Coller ».
+            La virgule décimale (12,5) est acceptée et convertie automatiquement.
+          </div>
+          <div id="dataStatus" class="status-ok" style="margin-top:.6rem"></div>
+
+          <!-- Zone de collage temporaire (masquée par défaut) -->
+          <div id="pasteZone" style="display:none;margin-top:.7rem">
+            <div class="field">
+              <label for="pasteArea">Collez ici (Ctrl+V), puis « Importer »</label>
+              <textarea id="pasteArea" spellcheck="false" placeholder="0&#9;0.18&#10;2&#9;0.34&#10;4&#9;0.51"></textarea>
+            </div>
+            <div class="row">
+              <button class="btn" id="importPaste">Importer</button>
+              <button class="btn ghost" id="cancelPaste">Annuler</button>
+            </div>
+            <div class="hint">Séparateurs reconnus : tabulation, point-virgule, virgule, espace. Une paire par ligne. La première ligne est ignorée si c'est un en-tête de texte.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="st"><span class="num">02</span> Modèles à ajuster</h2>
+          <div id="modelToggles"></div>
+          <button class="btn" id="fitBtn" style="margin-top:.7rem">▶ Ajuster &amp; comparer</button>
+          <div class="warn">
+            <b>Honnêteté méthodologique.</b> L'ajustement utilise un optimiseur Nelder–Mead écrit en JavaScript,
+            avec redémarrages multiples. C'est suffisant pour explorer, mais pour une publication, recoupez les
+            résultats avec <span style="font-family:var(--mono)">scipy.optimize.curve_fit</span> (je peux fournir
+            le script Python). Les formes d'équations s'appuient sur des revues ; vérifiez-les dans les sources
+            primaires avant soumission.
+          </div>
+        </div>
+      </div>
+
+      <!-- COLONNE DROITE -->
+      <div>
+        <div class="chart-wrap">
+          <h3>Ajustements</h3>
+          <div class="sub">Points = données observées. Courbes = modèles ajustés.</div>
+          <div class="canvas-box"><canvas id="fitChart"></canvas></div>
+        </div>
+
+        <div class="panel" style="margin-bottom:1.3rem">
+          <h2 class="st"><span class="num">03</span> Comparaison des modèles
+            <span title="Le meilleur modèle minimise AIC/BIC. ΔAIC < 2 : modèles équivalents. Voir la modale." style="cursor:help;font-size:.7em;opacity:.7">ℹ</span>
+          </h2>
+          <div id="resultsTable"><div class="empty">Chargez des données puis lancez l'ajustement.</div></div>
+          <div id="interpretation"></div>
+        </div>
+
+        <div class="chart-wrap">
+          <h3>Extrapolation &amp; ETP productif</h3>
+          <div class="sub">Projection du meilleur modèle au-delà des données. L'ETP normalise par l'asymptote estimée.</div>
+          <div class="field" style="max-width:260px">
+            <label for="horizon">Horizon de projection <span class="val" id="horizonVal">48 mois</span></label>
+            <input type="range" id="horizon" min="12" max="120" step="1" value="48">
+          </div>
+          <div class="canvas-box"><canvas id="projChart"></canvas></div>
+          <div id="projNote" class="status-ok" style="margin-top:.7rem"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>© 2024–2026 · Banc d'essai courbes d'apprentissage · GPLv3 · Méthodo. d'après Anzanello &amp; Fogliatto (2011) et études empiriques d'order picking / assemblage</footer>
+
+  <!-- MODALE -->
+  <div id="infoModal" class="modal">
+    <div class="modal-content">
+      <button class="close" id="closeModal">&times;</button>
+      <h2>Les modèles et leurs sources</h2>
+      <p>Cet outil n'impose pas une forme de courbe : il en ajuste plusieurs et les départage par les critères
+        d'information. Cette approche répond à un constat de la littérature : <b>aucune forme unique ne fait
+        consensus</b>, et le débat « loi de puissance vs exponentielle » reste ouvert.</p>
+
+      <h3>Variable et notation</h3>
+      <p>$x$ = temps cumulé d'expérience (ici, mois). $y(x)$ = productivité prédite. Les paramètres sont estimés
+        par moindres carrés.</p>
+
+      <h3>1. Wright / loi de puissance (1936)</h3>
+      <div class="math-formula">$$y(x) = a\,(x+1)^{b}, \quad b>0$$</div>
+      <p>Le modèle historique des « learning curves » en production. Décroissance des gains en loi de puissance.
+        ($x+1$ pour éviter la singularité en 0.)</p>
+
+      <h3>2. Exponentielle (loi de pratique exponentielle)</h3>
+      <div class="math-formula">$$y(x) = A\,\big(1 - e^{-x/\tau}\big) + c_0$$</div>
+      <p>Soutenue par les travaux défendant une « loi exponentielle de la pratique » contre la loi de puissance,
+        notamment sur données individuelles.</p>
+
+      <h3>3. Stanford-B</h3>
+      <div class="math-formula">$$y(x) = a\,(x + B + 1)^{b}$$</div>
+      <p>Variante de Wright intégrant l'<b>expérience antérieure</b> via $B$ (un décalage). Conçu à l'origine pour
+        l'assemblage (Boeing 707). C'est la formalisation publiée de votre ancienne notion d'« ancienneté ».</p>
+
+      <h3>4. DeJong</h3>
+      <div class="math-formula">$$y(x) = a\,\big[M + (1-M)\,(x+1)^{b}\big]$$</div>
+      <p>Variante de Wright avec un <b>facteur d'incompressibilité</b> $M\in[0,1]$ : la part de la tâche non
+        améliorable (typiquement exécutée par la machine). C'est la formalisation publiée de votre ancien plancher $c_0$.</p>
+
+      <h3>5. Logistique (vraie sigmoïde)</h3>
+      <div class="math-formula">$$y(x) = \dfrac{L}{1 + e^{-k\,(x - x_0)}} + c_0$$</div>
+
+      <h3>6. Gompertz (sigmoïde asymétrique)</h3>
+      <div class="math-formula">$$y(x) = L\,e^{-e^{-k\,(x - x_0)}} + c_0$$</div>
+      <p>Les formes 5 et 6 produisent un véritable « S » (démarrage lent, accélération, plateau). La littérature
+        montre que le S apparaît surtout quand le <b>taux d'apprentissage est faible</b> ; il n'est pas universel.</p>
+
+      <h3>7. Hyperbolique à 3 paramètres</h3>
+      <div class="math-formula">$$y(x) = c_0 + \dfrac{(L - c_0)\,x}{x + h}$$</div>
+      <p>Mis en avant comme le mieux ajusté dans des études empiriques d'order picking et d'assemblage textile.</p>
+
+      <h3>Critères de comparaison</h3>
+      <ul>
+        <li><b>SSE / RMSE</b> — erreur résiduelle brute.</li>
+        <li><b>MAPE</b> — erreur en pourcentage, lisible métier.</li>
+        <li><b>R²</b> — part de variance expliquée.</li>
+        <li><b>AIC / BIC</b> — pénalisent le nombre de paramètres pour éviter le surajustement. <b>Le plus petit gagne.</b>
+          Une différence ΔAIC &lt; 2 signifie que deux modèles sont pratiquement équivalents.</li>
+      </ul>
+
+      <div class="callout">
+        <b>Limites à garder en tête.</b> (1) Je n'ai pas trouvé d'étude portant spécifiquement sur le travail
+        administratif à complexité constante : la transposition vient de la production répétitive et de la
+        psychologie cognitive. (2) Modéliser des agents individuels ≠ modéliser une moyenne d'équipe (la forme
+        lisse peut être un artefact d'agrégation). (3) L'optimiseur JS est exploratoire, pas de qualité publication.
+      </div>
+
+      <h3>Références (à recouper aux originaux)</h3>
+      <p class="ref">Wright, T.P. (1936). Factors affecting the cost of airplanes. <i>J. of the Aeronautical Sciences</i>.</p>
+      <p class="ref">Anzanello, M.J. &amp; Fogliatto, F.S. (2011). Learning curve models and applications: literature review and research directions. <i>Int. J. of Industrial Ergonomics</i>, 41, 573–583.</p>
+      <p class="ref">Heathcote, A., Brown, S. &amp; Mewhort, D.J.K. (2000). The power law repealed: the case for an exponential law of practice. <i>Psychonomic Bulletin &amp; Review</i>, 7(2), 185–207.</p>
+      <p class="ref">Newell, A. &amp; Rosenbloom, P.S. (1981). Mechanisms of skill acquisition and the law of practice.</p>
+      <p style="font-size:.76rem;font-style:italic;margin-top:.6rem">Ces références ont été identifiées via recherche web et doivent être vérifiées dans leur source primaire avant toute citation formelle.</p>
+    </div>
+  </div>
+
+  <script>
+  /* ===================================================================
+     Licence GPLv3 - https://mdph.over.blog/
+     Banc d'essai comparatif de modeles de courbes d'apprentissage
+     =================================================================== */
+
+  const $ = id => document.getElementById(id);
+  const PALETTE = ['#b4541e','#1f5c4a','#c69b3a','#3a6ea5','#a23b5c','#5c7a3a','#7d6b8a'];
+
+  // ---------- Définition des modèles ----------
+  // Chaque modèle : nom, nb params, prédiction f(x,p), init(data) -> p0, bornes (pour clamp léger)
+  const MODELS = {
+    wright: {
+      name: 'Wright (puissance)', k: 2, color: PALETTE[0],
+      f: (x,p) => p[0] * Math.pow(x + 1, p[1]),
+      init: d => [d.ymax, 0.3],
+      // y = a(x+1)^b : si b<0 -> tend vers 0 ; si b>0 -> diverge. Pas d'asymptote haute finie utile.
+      asymptote: p => (p[1] < 0 ? null : null),
+    },
+    expo: {
+      name: 'Exponentielle', k: 3, color: PALETTE[1],
+      f: (x,p) => p[0] * (1 - Math.exp(-x / Math.max(1e-6,p[1]))) + p[2],
+      init: d => [d.range, d.xspan/3, d.ymin],
+      // x->inf : A + c0
+      asymptote: p => p[0] + p[2],
+    },
+    stanfordB: {
+      name: 'Stanford-B', k: 3, color: PALETTE[2],
+      f: (x,p) => p[0] * Math.pow(x + Math.max(0,p[2]) + 1, p[1]),
+      init: d => [d.ymax, 0.3, 1],
+      asymptote: p => null, // même forme que Wright : pas d'asymptote haute finie
+    },
+    dejong: {
+      name: 'DeJong', k: 3, color: PALETTE[3],
+      f: (x,p) => { const M = clamp01(p[2]); return p[0]*(M + (1-M)*Math.pow(x+1, p[1])); },
+      init: d => [d.ymax, 0.3, 0.3],
+      asymptote: p => null, // croît avec (x+1)^b : pas d'asymptote haute finie
+    },
+    logistic: {
+      name: 'Logistique (S)', k: 4, color: PALETTE[4],
+      f: (x,p) => p[0] / (1 + Math.exp(-p[1]*(x - p[2]))) + p[3],
+      init: d => [d.range, 0.3, d.xmid, d.ymin],
+      // x->inf : L + c0
+      asymptote: p => p[0] + p[3],
+    },
+    gompertz: {
+      name: 'Gompertz (S)', k: 4, color: PALETTE[5],
+      f: (x,p) => p[0] * Math.exp(-Math.exp(-p[1]*(x - p[2]))) + p[3],
+      init: d => [d.range, 0.3, d.xmid, d.ymin],
+      // x->inf : L + c0
+      asymptote: p => p[0] + p[3],
+    },
+    hyperbolic: {
+      name: 'Hyperbolique 3p', k: 3, color: PALETTE[6],
+      f: (x,p) => { const c0=p[0], L=p[1], h=Math.max(1e-6,p[2]); return c0 + (L - c0)*x/(x + h); },
+      init: d => [d.ymin, d.ymax, d.xspan/2],
+      // x->inf : L
+      asymptote: p => p[1],
+    },
+  };
+  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+
+  // ---------- Données : modèle d'état de la grille ----------
+  // rows = [{x:'0', y:'0.18'}, ...]  (valeurs en chaîne, validées à la lecture)
+  let rows = [];
+
+  // Parseur de nombre tolérant : accepte la virgule décimale française.
+  function parseNum(s) {
+    if (s == null) return NaN;
+    const t = String(s).trim().replace(',', '.');
+    if (t === '') return NaN;
+    const v = Number(t);
+    return Number.isFinite(v) ? v : NaN;
+  }
+
+  // Construit la liste des points valides à partir de la grille.
+  function collectPoints() {
+    const pts = [];
+    let bad = 0, nonEmpty = 0;
+    rows.forEach((r, i) => {
+      const xEl = document.querySelector(`#row_${i} .cx`);
+      const yEl = document.querySelector(`#row_${i} .cy`);
+      const isEmpty = String(r.x).trim() === '' && String(r.y).trim() === '';
+      if (isEmpty) { if (xEl) xEl.classList.remove('bad'); if (yEl) yEl.classList.remove('bad'); return; }
+      nonEmpty++;
+      const x = parseNum(r.x), y = parseNum(r.y);
+      const okX = !Number.isNaN(x), okY = !Number.isNaN(y);
+      if (xEl) xEl.classList.toggle('bad', !okX);
+      if (yEl) yEl.classList.toggle('bad', !okY);
+      if (okX && okY) pts.push({ x, y }); else bad++;
+    });
+    pts.sort((a, b) => a.x - b.x);
+    return { pts, valid: pts.length, total: nonEmpty, bad };
+  }
+
+  // Met à jour la ligne de statut sous la grille.
+  function refreshStatus() {
+    const { valid, bad } = collectPoints();
+    const el = $('dataStatus');
+    if (valid === 0 && bad === 0) { el.textContent = ''; return; }
+    let msg = `${valid} point${valid > 1 ? 's' : ''} valide${valid > 1 ? 's' : ''}`;
+    if (bad > 0) { msg += ` · ${bad} ligne${bad > 1 ? 's' : ''} invalide${bad > 1 ? 's' : ''} (en rose)`; el.className = 'status-warn'; }
+    else { el.className = 'status-ok'; }
+    if (valid < 4) { msg += ` · minimum 4 pour ajuster`; el.className = 'status-warn'; }
+    el.textContent = msg;
+  }
+
+  function dataStats(pts) {
+    const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+    const ymin = Math.min(...ys), ymax = Math.max(...ys);
+    const xmin = Math.min(...xs), xmax = Math.max(...xs);
+    return { ymin, ymax, range: (ymax-ymin)||1, xmin, xmax,
+             xspan:(xmax-xmin)||1, xmid:(xmin+xmax)/2, n: pts.length };
+  }
+
+  // ---------- Optimiseur Nelder-Mead (minimise SSE) ----------
+  function sse(model, pts, p) {
+    let s = 0;
+    for (const pt of pts) { const e = model.f(pt.x, p) - pt.y; if (!isFinite(e)) return Infinity; s += e*e; }
+    return s;
+  }
+  function nelderMead(obj, x0, opts={}) {
+    const n = x0.length;
+    const step = opts.step || 0.1, maxIter = opts.maxIter || 800;
+    const alpha=1, gamma=2, rho=0.5, sigma=0.5;
+    let simplex = [x0.slice()];
+    for (let i=0;i<n;i++){ const p=x0.slice(); p[i]+= (p[i]!==0? p[i]*step : step); simplex.push(p); }
+    let fvals = simplex.map(obj);
+    for (let iter=0; iter<maxIter; iter++){
+      const order = fvals.map((f,i)=>[f,i]).sort((a,b)=>a[0]-b[0]).map(o=>o[1]);
+      simplex = order.map(i=>simplex[i]); fvals = order.map(i=>fvals[i]);
+      if (Math.abs(fvals[0]-fvals[n]) < 1e-12) break;
+      const centroid = new Array(n).fill(0);
+      for (let i=0;i<n;i++) for (let j=0;j<n;j++) centroid[j]+=simplex[i][j]/n;
+      const xr = centroid.map((c,j)=>c+alpha*(c-simplex[n][j])); const fr=obj(xr);
+      if (fr < fvals[0]) {
+        const xe = centroid.map((c,j)=>c+gamma*(xr[j]-c)); const fe=obj(xe);
+        if (fe<fr){ simplex[n]=xe; fvals[n]=fe; } else { simplex[n]=xr; fvals[n]=fr; }
+      } else if (fr < fvals[n-1]) { simplex[n]=xr; fvals[n]=fr; }
+      else {
+        const xc = centroid.map((c,j)=>c+rho*(simplex[n][j]-c)); const fc=obj(xc);
+        if (fc < fvals[n]) { simplex[n]=xc; fvals[n]=fc; }
+        else { for (let i=1;i<=n;i++){ simplex[i]=simplex[0].map((s,j)=>s+sigma*(simplex[i][j]-s)); fvals[i]=obj(simplex[i]); } }
+      }
+    }
+    const best = fvals.map((f,i)=>[f,i]).sort((a,b)=>a[0]-b[0])[0][1];
+    return { p: simplex[best], f: fvals[best] };
+  }
+  // Multi-démarrage pour robustesse
+  function fitModel(model, pts, stats) {
+    const base = model.init(stats);
+    let best = null;
+    const jitters = [0, 0.5, -0.3, 1.0, 0.2];
+    for (const j of jitters) {
+      const x0 = base.map(v => v + (v||1)*j*0.3);
+      const res = nelderMead(p => sse(model, pts, p), x0, { step:0.15, maxIter:1000 });
+      if (!best || res.f < best.f) best = res;
+    }
+    return best;
+  }
+
+  // ---------- Critères ----------
+  function metrics(model, pts, p, n) {
+    const k = model.k;
+    let SSE=0, absPctSum=0, pctCount=0;
+    const ybar = pts.reduce((s,pt)=>s+pt.y,0)/n;
+    let SStot=0;
+    for (const pt of pts){
+      const yhat = model.f(pt.x,p); const e = yhat-pt.y;
+      SSE += e*e; SStot += (pt.y-ybar)*(pt.y-ybar);
+      if (Math.abs(pt.y) > 1e-9){ absPctSum += Math.abs(e/pt.y); pctCount++; }
+    }
+    const RMSE = Math.sqrt(SSE/n);
+    const MAPE = pctCount ? (absPctSum/pctCount)*100 : NaN;
+    const R2 = SStot>0 ? 1 - SSE/SStot : NaN;
+    // AIC/BIC version moindres carrés gaussiens : AIC = n ln(SSE/n) + 2(k+1)
+    const AIC = n*Math.log(SSE/n + 1e-12) + 2*(k+1);
+    const AICc = AIC + (2*(k+1)*(k+2))/Math.max(1,(n-k-2));
+    const BIC = n*Math.log(SSE/n + 1e-12) + (k+1)*Math.log(n);
+    return { SSE, RMSE, MAPE, R2, AIC, AICc, BIC, k };
+  }
+
+  // ---------- État ----------
+  let lastFit = null; // { results:[{key,model,p,m}], best, pts }
+  let fitChart=null, projChart=null;
+
+  // ---------- Toggles modèles ----------
+  function buildToggles() {
+    const box = $('modelToggles'); box.innerHTML='';
+    Object.entries(MODELS).forEach(([key,m],i)=>{
+      const id='m_'+key;
+      const lbl=document.createElement('label'); lbl.className='chk';
+      lbl.innerHTML=`<input type="checkbox" id="${id}" checked>
+        <span class="swatch" style="background:${m.color}"></span>${m.name} <span style="opacity:.6">(${m.k}p)</span>`;
+      box.appendChild(lbl);
+    });
+  }
+  function selectedModels(){ return Object.keys(MODELS).filter(k=>$('m_'+k).checked); }
+
+  // ---------- Rendu de la grille éditable ----------
+  function renderGrid() {
+    const box = $('dataRows');
+    box.innerHTML = rows.map((r, i) => `
+      <div class="data-row" id="row_${i}">
+        <input class="cx" type="text" inputmode="decimal" value="${escAttr(r.x)}" data-i="${i}" data-f="x" aria-label="Mois ligne ${i+1}">
+        <input class="cy" type="text" inputmode="decimal" value="${escAttr(r.y)}" data-i="${i}" data-f="y" aria-label="Productivité ligne ${i+1}">
+        <button class="del" data-i="${i}" title="Supprimer la ligne" aria-label="Supprimer">×</button>
+      </div>`).join('');
+
+    box.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.i, f = e.target.dataset.f;
+        rows[i][f] = e.target.value;
+        refreshStatus();
+      });
+      // Entrée = nouvelle ligne ; flèches haut/bas = navigation verticale
+      inp.addEventListener('keydown', e => {
+        const i = +e.target.dataset.i, f = e.target.dataset.f;
+        if (e.key === 'Enter') { e.preventDefault(); addRow(); focusCell(rows.length - 1, 'x'); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); focusCell(Math.min(rows.length - 1, i + 1), f); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); focusCell(Math.max(0, i - 1), f); }
+      });
+    });
+    box.querySelectorAll('.del').forEach(btn =>
+      btn.addEventListener('click', () => { rows.splice(+btn.dataset.i, 1); if (!rows.length) rows.push({x:'',y:''}); renderGrid(); refreshStatus(); })
+    );
+  }
+  function escAttr(s){ return String(s).replace(/"/g,'&quot;'); }
+  function focusCell(i, f){ const el = document.querySelector(`#row_${i} .c${f}`); if (el){ el.focus(); el.select(); } }
+
+  function addRow(){ rows.push({x:'',y:''}); renderGrid(); }
+
+  // ---------- Import par collage (Excel / CSV) ----------
+  // Tolère en-tête texte en 1re ligne, virgule décimale, séparateurs variés.
+  function parsePasted(text) {
+    const out = [];
+    const lines = text.split(/\r?\n/);
+    lines.forEach((line, idx) => {
+      const s = line.trim();
+      if (!s) return;
+      // Découpe sur tab / point-virgule en priorité (formats Excel), sinon espaces multiples
+      let cells = s.split(/[\t;]/);
+      if (cells.length < 2) cells = s.split(/[, ]+/);
+      cells = cells.map(c => c.trim()).filter(c => c !== '');
+      if (cells.length < 2) return;
+      const x = parseNum(cells[0]), y = parseNum(cells[1]);
+      // 1re ligne non numérique = en-tête, on l'ignore silencieusement
+      if (idx === 0 && (Number.isNaN(x) || Number.isNaN(y))) return;
+      out.push({ x: cells[0].replace(',', '.'), y: cells[1].replace(',', '.') });
+    });
+    return out;
+  }
+  function importPasted() {
+    const parsed = parsePasted($('pasteArea').value);
+    if (!parsed.length) { alert('Aucune paire de nombres détectée dans le texte collé.'); return; }
+    rows = parsed;
+    renderGrid(); refreshStatus();
+    $('pasteZone').style.display = 'none';
+    $('pasteArea').value = '';
+  }
+
+  // ---------- Lancement ----------
+  function runFit() {
+    const { pts } = collectPoints();
+    if (pts.length < 4) { alert('Il faut au moins 4 points valides pour ajuster ces modèles de façon sensée.'); return; }
+    const stats = dataStats(pts);
+    const keys = selectedModels();
+    if (!keys.length) { alert('Sélectionnez au moins un modèle.'); return; }
+
+    const results = keys.map(key=>{
+      const model = MODELS[key];
+      const fit = fitModel(model, pts, stats);
+      const m = metrics(model, pts, fit.p, stats.n);
+      return { key, model, p: fit.p, m };
+    }).filter(r => isFinite(r.m.SSE) && isFinite(r.m.AICc));
+
+    // Garde-fou : aucun modèle n'a pu être ajusté (données pathologiques)
+    if (!results.length) {
+      lastFit = null;
+      $('resultsTable').innerHTML = `<div class="warn"><b>Aucun modèle n'a pu être ajusté.</b> Vérifiez vos données : valeurs constantes, points trop peu nombreux ou aberrants peuvent empêcher la convergence.</div>`;
+      $('interpretation').innerHTML = '';
+      if (fitChart) { fitChart.destroy(); fitChart = null; }
+      if (projChart) { projChart.destroy(); projChart = null; }
+      return;
+    }
+
+    results.sort((a,b)=>a.m.AICc - b.m.AICc);
+    const best = results[0];
+    const minAICc = best.m.AICc;
+    results.forEach(r => r.dAICc = r.m.AICc - minAICc);
+
+    lastFit = { results, best, pts, stats };
+    renderTable(); renderFitChart(); renderProjection();
+  }
+
+  // ---------- Tableau ----------
+  function fmt(v, d=3){ return (v==null||!isFinite(v))?'—':Number(v).toFixed(d); }
+  function renderTable() {
+    const { results, pts } = lastFit;
+    let warn = '';
+    if (pts.length < 8) warn = `<div class="warn" style="margin-bottom:.8rem"><b>Échantillon réduit (${pts.length} points).</b> Avec peu de points, les critères AIC/BIC sont peu fiables et les modèles à 4 paramètres surajustent facilement. Interprétez avec prudence.</div>`;
+    let html = warn + `<table><thead><tr>
+      <th>Modèle</th><th>p</th><th>RMSE</th><th>MAPE %</th><th>R²</th><th>AICc</th><th>ΔAICc</th><th>BIC</th>
+      </tr></thead><tbody>`;
+    results.forEach((r,i)=>{
+      html += `<tr class="${i===0?'best':''}">
+        <td><span class="swatch" style="background:${r.model.color}"></span>${r.model.name}</td>
+        <td>${r.m.k}</td><td>${fmt(r.m.RMSE)}</td><td>${fmt(r.m.MAPE,1)}</td>
+        <td>${fmt(r.m.R2)}</td><td>${fmt(r.m.AICc,1)}</td>
+        <td>${fmt(r.dAICc,1)}</td><td>${fmt(r.m.BIC,1)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    $('resultsTable').innerHTML = html;
+
+    // Interprétation honnête
+    const best = results[0];
+    const ties = results.filter(r => r.dAICc < 2);
+    let interp = `<div class="callout" style="margin-top:1rem">`;
+    if (ties.length > 1) {
+      interp += `<b>${ties.length} modèles équivalents</b> (ΔAICc &lt; 2) : ${ties.map(t=>t.model.name).join(', ')}.
+        Les données ne permettent pas de les départager. Le plus parcimonieux
+        (${ties.slice().sort((a,b)=>a.m.k-b.m.k)[0].model.name}, ${ties.slice().sort((a,b)=>a.m.k-b.m.k)[0].m.k} paramètres)
+        est préférable par principe de parcimonie.`;
+    } else {
+      interp += `Meilleur modèle : <b>${best.model.name}</b> (AICc le plus faible, R²=${fmt(best.m.R2)}).
+        Aucun autre modèle n'est dans la zone d'équivalence (ΔAICc &lt; 2).`;
+    }
+    interp += ` <i>Rappel : « meilleur ajustement » ≠ « bonne capacité de prédiction » ; validez idéalement par
+      validation croisée ou sur des données hors échantillon.</i></div>`;
+    $('interpretation').innerHTML = interp;
+
+    if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise([$('resultsTable')]).catch(()=>{});
+  }
+
+  // ---------- Graphe d'ajustement ----------
+  function curvePoints(model, p, xmin, xmax, steps=120) {
+    const out=[]; for (let i=0;i<=steps;i++){ const x=xmin+(xmax-xmin)*i/steps; out.push({x, y: model.f(x,p)}); } return out;
+  }
+  function renderFitChart() {
+    const { results, pts, stats } = lastFit;
+    const datasets = [{
+      label:'Observé', data: pts.map(p=>({x:p.x,y:p.y})),
+      showLine:false, pointRadius:4, pointBackgroundColor:'#1a1410', borderColor:'#1a1410'
+    }];
+    results.forEach(r=>{
+      datasets.push({
+        label:r.model.name,
+        data: curvePoints(r.model, r.p, stats.xmin, stats.xmax),
+        borderColor:r.model.color, borderWidth: r===results[0]?2.5:1.2,
+        pointRadius:0, tension:0.2, borderDash: r===results[0]?[]:[4,3]
+      });
+    });
+    if (fitChart) fitChart.destroy();
+    fitChart = new Chart($('fitChart'), {
+      type:'scatter', data:{datasets},
+      options: chartOpts('Mois', 'Productivité')
+    });
+  }
+
+  // ---------- Projection + ETP ----------
+  function renderProjection() {
+    if (!lastFit || !lastFit.best) return;
+    const { best, pts, stats } = lastFit;
+    const H = parseInt($('horizon').value,10);
+    const xmax = Math.max(stats.xmax, H);
+    const curve = curvePoints(best.model, best.p, 0, xmax, 140);
+
+    // Asymptote THÉORIQUE du modèle (et non le max numérique sur l'horizon).
+    const asym = best.model.asymptote ? best.model.asymptote(best.p) : null;
+    const bounded = asym != null && isFinite(asym) && asym > 1e-9;
+
+    const datasets = [
+      { label:`${best.model.name} — productivité`, data:curve.map(c=>({x:c.x,y:c.y})),
+        borderColor:best.model.color, borderWidth:2.5, pointRadius:0, tension:0.2, yAxisID:'y' },
+      { label:'Observé', data: pts.map(p=>({x:p.x,y:p.y})), showLine:false,
+        pointRadius:3.5, pointBackgroundColor:best.model.color, borderColor:best.model.color, yAxisID:'y' }
+    ];
+    // On ne trace l'ETP normalisé QUE si le modèle a une asymptote finie (sinon la normalisation n'a pas de sens).
+    if (bounded) {
+      datasets.splice(1, 0, {
+        label:'ETP productif (norm. / asymptote)', data:curve.map(c=>({x:c.x,y:c.y/asym})),
+        borderColor:'#1a1410', borderWidth:1.5, borderDash:[5,3], pointRadius:0, tension:0.2, yAxisID:'y1'
+      });
+    }
+
+    // Note explicative sous le graphe
+    const note = $('projNote');
+    if (note) {
+      if (bounded) {
+        note.className = 'status-ok';
+        note.textContent = `ETP normalisé par l'asymptote théorique estimée (${fmt(asym)}). Mois où l'ETP atteint 95 % : ${etpReach(best, asym, 0.95, xmax)}.`;
+      } else {
+        note.className = 'status-warn';
+        note.textContent = `Le modèle « ${best.model.name} » n'a pas d'asymptote finie (croissance non bornée) : l'ETP normalisé n'est pas défini de façon fiable et n'est donc pas tracé. Un modèle à plateau (exponentielle, logistique, Gompertz, hyperbolique) est requis pour un ETP interprétable.`;
+      }
+    }
+
+    if (projChart) projChart.destroy();
+    projChart = new Chart($('projChart'), {
+      type:'scatter', data:{datasets},
+      options: {
+        responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest',intersect:false},
+        plugins:{ legend:{position:'top', labels:{font:{family:'Spline Sans Mono',size:11}}},
+          tooltip:{callbacks:{title:items=>`Mois ${fmt(items[0].parsed.x,0)}`}} },
+        scales:{
+          x:{type:'linear',title:{display:true,text:'Mois',font:{family:'Spline Sans Mono'}},grid:{color:'rgba(0,0,0,.05)'}},
+          y:{position:'left',title:{display:true,text:'Productivité',font:{family:'Spline Sans Mono'}},grid:{color:'rgba(0,0,0,.05)'}},
+          y1:{position:'right',display:bounded,title:{display:bounded,text:'ETP productif',font:{family:'Spline Sans Mono'}},
+              min:0,suggestedMax:1.1,grid:{drawOnChartArea:false}}
+        }
+      }
+    });
+  }
+  // Mois où la productivité atteint une fraction de l'asymptote
+  function etpReach(best, asym, frac, xmax) {
+    for (let x = 0; x <= xmax; x++) {
+      if (best.model.f(x, best.p) / asym >= frac) return `mois ${x}`;
+    }
+    return 'au-delà de l\'horizon';
+  }
+
+  function chartOpts(xl, yl) {
+    return {
+      responsive:true, maintainAspectRatio:false, interaction:{mode:'nearest',intersect:false},
+      plugins:{ legend:{position:'top', labels:{font:{family:'Spline Sans Mono',size:11}}},
+        tooltip:{callbacks:{title:items=>`Mois ${fmt(items[0].parsed.x,0)}`}} },
+      scales:{
+        x:{type:'linear',title:{display:true,text:xl,font:{family:'Spline Sans Mono'}},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{title:{display:true,text:yl,font:{family:'Spline Sans Mono'}},grid:{color:'rgba(0,0,0,.05)'}}
+      }
+    };
+  }
+
+  // ---------- Démo ----------
+  // Données synthétiques bruitées (montée + plateau), purement illustratives.
+  function demoRows() {
+    const out=[]; const seedRand = mulberry32(42);
+    for (let m=0;m<=30;m+=2){
+      const truth = 0.15 + 0.8*(1 - Math.exp(-m/8));     // forme exponentielle "vraie"
+      const noisy = Math.max(0, truth + (seedRand()-0.5)*0.08);
+      out.push({ x: String(m), y: noisy.toFixed(3) });
+    }
+    return out;
+  }
+  function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  // ---------- Init ----------
+  document.addEventListener('DOMContentLoaded', ()=>{
+    buildToggles();
+
+    // Grille
+    $('addRow').addEventListener('click', ()=>{ addRow(); focusCell(rows.length-1,'x'); });
+    $('clearData').addEventListener('click', ()=>{ rows=[{x:'',y:''}]; renderGrid(); refreshStatus(); });
+    $('loadDemo').addEventListener('click', ()=>{ rows=demoRows(); renderGrid(); refreshStatus(); });
+
+    // Collage
+    $('pasteBtn').addEventListener('click', ()=>{ $('pasteZone').style.display='block'; $('pasteArea').focus(); });
+    $('cancelPaste').addEventListener('click', ()=>{ $('pasteZone').style.display='none'; $('pasteArea').value=''; });
+    $('importPaste').addEventListener('click', importPasted);
+
+    // Actions
+    $('fitBtn').addEventListener('click', runFit);
+    $('horizon').addEventListener('input', ()=>{ $('horizonVal').textContent=`${$('horizon').value} mois`; renderProjection(); });
+    $('infoButton').addEventListener('click', ()=>{ $('infoModal').classList.add('open');
+      if (window.MathJax&&window.MathJax.typesetPromise) window.MathJax.typesetPromise([$('infoModal')]).catch(()=>{}); });
+    $('closeModal').addEventListener('click', ()=>$('infoModal').classList.remove('open'));
+    $('infoModal').addEventListener('click', e=>{ if(e.target.id==='infoModal') $('infoModal').classList.remove('open'); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') $('infoModal').classList.remove('open'); });
+
+    // Démarrage avec la démo
+    rows = demoRows();
+    renderGrid();
+    refreshStatus();
+  });
+  </script>
+</body>
+</html>
