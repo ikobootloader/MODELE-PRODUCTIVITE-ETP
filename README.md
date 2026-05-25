@@ -15,7 +15,7 @@ L'outil produit, à partir de couples `(mois, productivité)` :
 
 ## Démarrage
 
-Aucune installation. Ouvrez `banc-essai-courbes_-_v3.html` dans un navigateur récent (Firefox, Chrome, Edge, Safari).
+Aucune installation. Ouvrez `banc-essai-courbes.html` dans un navigateur récent (Firefox, Chrome, Edge, Safari).
 
 Deux dépendances sont chargées depuis un CDN et **nécessitent une connexion Internet** au premier affichage :
 
